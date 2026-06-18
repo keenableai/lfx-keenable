@@ -1,0 +1,55 @@
+[project]
+name = "lfx-keenable"
+version = "0.1.0"
+description = "Keenable web-search and page-fetch components as a standalone Langflow Extension Bundle."
+readme = "README.md"
+requires-python = ">=3.10,<3.15"
+license = { text = "MIT" }
+authors = [
+    { name = "Keenable", email = "hello@keenable.ai" },
+]
+keywords = ["langflow", "lfx", "extension", "bundle", "keenable", "search", "web-search", "agents"]
+
+# Runtime deps: lfx (the BUNDLE_API surface) plus httpx for the HTTP transport.
+# httpx is already an lfx dependency, but we list it as a direct runtime dep so
+# the bundle keeps building even if lfx changes its transitive deps later.
+dependencies = [
+    "lfx>=1.10.0,<2.0.0",
+    "httpx>=0.27,<1.0",
+]
+
+[project.urls]
+Homepage = "https://keenable.ai"
+Documentation = "https://docs.keenable.ai"
+Repository = "https://github.com/keenableai/lfx-keenable"
+
+# Manifest-shipping distributions are discovered via the ``langflow.extensions``
+# entry-point. The value is the dotted path to the package containing
+# ``extension.json``; the loader walks ``importlib.metadata.files()`` from there
+# to find the manifest.
+[project.entry-points."langflow.extensions"]
+lfx-keenable = "lfx_keenable"
+
+[dependency-groups]
+test = [
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# extension.json + components live inside the lfx_keenable package so
+# ``importlib.metadata.files(dist)`` finds them and the loader resolves
+# bundles[].path relative to the manifest's directory.
+packages = ["src/lfx_keenable"]
+include = ["src/lfx_keenable/extension.json", "src/lfx_keenable/components/**/*.py"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/lfx_keenable",
+    "README.md",
+    "LICENSE",
+    "pyproject.toml",
+]
