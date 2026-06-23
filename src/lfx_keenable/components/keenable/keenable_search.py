@@ -19,8 +19,7 @@ class KeenableSearchComponent(Component):
 
     Keyless by default: with no API key the keyless public endpoint
     (``/v1/search/public``) is used. Provide an API key (or set
-    ``KEENABLE_API_KEY``) to use the authenticated endpoint — required for
-    ``mode="realtime"`` and for higher rate limits.
+    ``KEENABLE_API_KEY``) to use the authenticated endpoint (for higher rate limits).
     """
 
     display_name = "Keenable Search"
@@ -35,8 +34,7 @@ class KeenableSearchComponent(Component):
             required=False,
             info=(
                 "Optional. With no key the keyless public search endpoint is used. "
-                "Falls back to the KEENABLE_API_KEY environment variable. A key is "
-                "required for mode='realtime' and lifts rate limits."
+                "Falls back to the KEENABLE_API_KEY environment variable. A key lifts rate limits."
             ),
         ),
         MessageTextInput(
@@ -55,11 +53,8 @@ class KeenableSearchComponent(Component):
         DropdownInput(
             name="mode",
             display_name="Search Mode",
-            info=(
-                "'pro' (default, deeper retrieval) or 'realtime' (low latency). "
-                "'realtime' requires an API key — it is not available keyless."
-            ),
-            options=["pro", "realtime"],
+            info="'pro' (default).",
+            options=["pro"],
             value="pro",
             advanced=True,
         ),
