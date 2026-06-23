@@ -8,8 +8,7 @@ Bundle**. Two components ship in the `keenable` bundle group:
 - **Keenable Fetch** — fetch a page and return its main content as markdown.
 
 Both are **keyless by default**: with no API key they call Keenable's public
-endpoints; provide a key to use the authenticated endpoints (required for
-`mode="realtime"` and for higher rate limits).
+endpoints; provide a key to use the authenticated endpoints (for higher rate limits).
 
 ## Install
 
@@ -34,7 +33,7 @@ tool-enabled).
 
 ### Keenable Search
 
-`query` plus optional per-query filters — `site`, `mode` (`pro` | `realtime`),
+`query` plus optional per-query filters — `site`, `mode` (`pro`),
 and publication / index date bounds (`published_after`/`before`,
 `acquired_after`/`before`). Returns a table of results
 (`title`, `url`, `description`, `published_at`, `acquired_at`). There is no
