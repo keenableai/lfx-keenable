@@ -6,7 +6,7 @@ from lfx.log.logger import logger
 from lfx.schema.data import Data
 from lfx.schema.dataframe import DataFrame
 
-from lfx_keenable.components.keenable._client import KeenableError, keenable_post, resolve_api_key
+from lfx_keenable.components.keenable._client import KeenableError, _redact, keenable_post, resolve_api_key
 
 
 class KeenableSearchComponent(Component):
@@ -119,7 +119,7 @@ class KeenableSearchComponent(Component):
             )
             results = data.get("results")
             if not isinstance(results, list):
-                msg = f"Unexpected response from the Keenable search API: {data!r}"
+                msg = f"Unexpected response from the Keenable search API: {_redact(repr(data)[:200], api_key)}"
                 raise KeenableError(msg)
             # The API returns a fixed-size result set as-is (no max_results param).
             out = [Data(text=(item.get("title") or item.get("url") or ""), data=item) for item in results]
