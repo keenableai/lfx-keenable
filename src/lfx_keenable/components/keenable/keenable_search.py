@@ -6,7 +6,12 @@ from lfx.log.logger import logger
 from lfx.schema.data import Data
 from lfx.schema.dataframe import DataFrame
 
-from lfx_keenable.components.keenable._client import KeenableError, _redact, keenable_post, resolve_api_key
+from lfx_keenable.components.keenable._client import (
+    KeenableError,
+    _redact,
+    keenable_post,
+    resolve_api_key,
+)
 
 
 class KeenableSearchComponent(Component):
