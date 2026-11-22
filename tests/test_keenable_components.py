@@ -335,6 +335,18 @@ def test_search_filters_are_sent(monkeypatch):
     assert sent["published_after"] == "2026-01-01"
 
 
+def test_search_objective_is_sent_trimmed(monkeypatch):
+    _patch_client(monkeypatch, _FakeResponse(json_body={"results": []}))
+    KeenableSearchComponent(query="x", mode="pro", objective="  Find the 2026 pricing.  ", _session_id="t").search()
+    assert _FakeClient.last["json"]["objective"] == "Find the 2026 pricing."
+
+
+def test_search_blank_objective_is_not_sent(monkeypatch):
+    _patch_client(monkeypatch, _FakeResponse(json_body={"results": []}))
+    KeenableSearchComponent(query="x", mode="pro", objective="   ", _session_id="t").search()
+    assert "objective" not in _FakeClient.last["json"]
+
+
 def test_search_error_returns_error_data(monkeypatch):
     _patch_client(monkeypatch, _FakeResponse(status_code=429, json_body={"message": "slow down"}))
     component = KeenableSearchComponent(query="x", mode="pro", _session_id="t")

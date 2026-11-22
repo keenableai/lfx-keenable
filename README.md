@@ -35,7 +35,9 @@ tool-enabled).
 
 `query` plus optional per-query filters — `site`, `mode` (`pro`),
 and publication / index date bounds (`published_after`/`before`,
-`acquired_after`/`before`). Returns a table of results
+`acquired_after`/`before`), and an optional `objective` (two or three
+sentences on what the search is for, max 1,000 characters; the ranker uses it
+alongside the query, so it changes the ordering). Returns a table of results
 (`title`, `url`, `description`, `published_at`, `acquired_at`). There is no
 `max_results` input — the API returns a fixed-size result set as-is.
 
