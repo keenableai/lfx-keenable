@@ -14,6 +14,9 @@ from lfx_keenable.components.keenable._client import (
 )
 
 
+MAX_OBJECTIVE_CHARS = 1000
+
+
 class KeenableSearchComponent(Component):
     """Query the Keenable web-search API built for AI agents.
 
@@ -124,6 +127,12 @@ class KeenableSearchComponent(Component):
                 if value:
                     payload[field] = value
             objective = str(getattr(self, "objective", None) or "").strip()
+            if len(objective) > MAX_OBJECTIVE_CHARS:
+                msg = (
+                    f"objective is {len(objective)} characters; the limit is "
+                    f"{MAX_OBJECTIVE_CHARS}. Shorten it to two or three sentences."
+                )
+                raise KeenableError(msg)
             if objective:
                 payload["objective"] = objective
 
