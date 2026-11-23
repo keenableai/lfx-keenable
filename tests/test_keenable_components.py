@@ -60,10 +60,6 @@ class _FakeClient:
         _FakeClient.last = {"method": "POST", "url": url, "json": json, "headers": headers}
         return self._response
 
-    def get(self, url, params=None, headers=None):
-        _FakeClient.last = {"method": "GET", "url": url, "params": params, "headers": headers}
-        return self._response
-
 
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch):
@@ -232,13 +228,22 @@ def test_fetch_keyed_posts_urls(monkeypatch):
     assert _FakeClient.last["json"] == {"urls": ["https://e.com"]}
 
 
-def test_fetch_keyless_uses_public_get(monkeypatch):
-    _patch_client(monkeypatch, _FakeResponse(json_body={"url": "https://e.com", "content": "hi"}))
+def test_fetch_keyless_posts_to_public_path(monkeypatch):
+    _patch_client(monkeypatch, _FakeResponse(json_body=_page_body(content="hi")))
     page = keenable_fetch("https://e.com", None, 30.0)
     assert page["content"] == "hi"
-    assert _FakeClient.last["method"] == "GET"
+    assert _FakeClient.last["method"] == "POST"
     assert _FakeClient.last["url"].endswith("/v1/fetch/public")
-    assert _FakeClient.last["params"] == {"url": "https://e.com"}
+    assert _FakeClient.last["json"] == {"urls": ["https://e.com"]}
+    assert _FakeClient.last["headers"]["X-Keenable-Title"] == "Langflow"
+    assert "X-API-Key" not in _FakeClient.last["headers"]
+
+
+def test_fetch_keyless_page_error_raises(monkeypatch):
+    body = {"results": [{"url": "https://e.com", "error": {"status": 429, "message": "slow down"}}]}
+    _patch_client(monkeypatch, _FakeResponse(json_body=body))
+    with pytest.raises(KeenableError, match="429.*slow down"):
+        keenable_fetch("https://e.com", None, 30.0)
 
 
 def test_fetch_page_error_raises(monkeypatch):
@@ -380,11 +385,11 @@ def test_fetch_component_initialization():
 
 
 def test_fetch_returns_content(monkeypatch):
-    _patch_client(monkeypatch, _FakeResponse(json_body={"url": "https://e.com", "title": "T", "content": "body"}))
+    _patch_client(monkeypatch, _FakeResponse(json_body=_page_body(title="T", content="body")))
     component = KeenableFetchComponent(url="https://e.com", _session_id="t")
     df = component.fetch()
     assert len(df) == 1
-    assert _FakeClient.last["method"] == "GET"
+    assert _FakeClient.last["method"] == "POST"
     assert _FakeClient.last["url"].endswith("/v1/fetch/public")
 
 
