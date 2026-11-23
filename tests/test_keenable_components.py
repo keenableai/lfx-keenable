@@ -14,7 +14,7 @@ from lfx_keenable import KeenableFetchComponent, KeenableSearchComponent
 from lfx_keenable.components.keenable import _client
 from lfx_keenable.components.keenable._client import (
     KeenableError,
-    keenable_get,
+    keenable_fetch,
     keenable_post,
     reject_private_fetch_target,
     resolve_api_key,
@@ -219,10 +219,39 @@ def test_post_keyed_uses_authenticated_path(monkeypatch):
     assert sent["headers"]["X-API-Key"] == "secret"
 
 
-def test_get_keyless_fetch_path(monkeypatch):
-    _patch_client(monkeypatch, _FakeResponse(json_body={"content": "hi"}))
-    keenable_get("/v1/fetch/public", "/v1/fetch", {"url": "https://e.com"}, None, 30.0)
+def _page_body(**page):
+    return {"request_id": "r", "results": [{"url": "https://e.com", **page}]}
+
+
+def test_fetch_keyed_posts_urls(monkeypatch):
+    _patch_client(monkeypatch, _FakeResponse(json_body=_page_body(content="hi")))
+    page = keenable_fetch("https://e.com", "secret", 30.0)
+    assert page["content"] == "hi"
+    assert _FakeClient.last["method"] == "POST"
+    assert _FakeClient.last["url"].endswith("/v1/fetch")
+    assert _FakeClient.last["json"] == {"urls": ["https://e.com"]}
+
+
+def test_fetch_keyless_uses_public_get(monkeypatch):
+    _patch_client(monkeypatch, _FakeResponse(json_body={"url": "https://e.com", "content": "hi"}))
+    page = keenable_fetch("https://e.com", None, 30.0)
+    assert page["content"] == "hi"
+    assert _FakeClient.last["method"] == "GET"
     assert _FakeClient.last["url"].endswith("/v1/fetch/public")
+    assert _FakeClient.last["params"] == {"url": "https://e.com"}
+
+
+def test_fetch_page_error_raises(monkeypatch):
+    body = {"results": [{"url": "https://e.com", "error": {"status": 404, "message": "page not found"}}]}
+    _patch_client(monkeypatch, _FakeResponse(json_body=body))
+    with pytest.raises(KeenableError, match="404.*page not found"):
+        keenable_fetch("https://e.com", "secret", 30.0)
+
+
+def test_fetch_without_results_raises(monkeypatch):
+    _patch_client(monkeypatch, _FakeResponse(json_body={"results": []}))
+    with pytest.raises(KeenableError):
+        keenable_fetch("https://e.com", "secret", 30.0)
 
 
 @pytest.mark.parametrize(
@@ -284,7 +313,7 @@ def test_transport_error_redacts_api_key(monkeypatch):
     key = "sk-transport-secret-XYZ"
     _patch_client_raises(monkeypatch, _client.httpx.ConnectError(f"failed with header key={key}"))
     with pytest.raises(KeenableError) as exc:
-        keenable_get("/v1/fetch/public", "/v1/fetch", {"url": "https://e.com"}, key, 30.0)
+        keenable_fetch("https://e.com", key, 30.0)
     assert key not in str(exc.value)
     assert "***" in str(exc.value)
 
@@ -355,6 +384,7 @@ def test_fetch_returns_content(monkeypatch):
     component = KeenableFetchComponent(url="https://e.com", _session_id="t")
     df = component.fetch()
     assert len(df) == 1
+    assert _FakeClient.last["method"] == "GET"
     assert _FakeClient.last["url"].endswith("/v1/fetch/public")
 
 
@@ -368,8 +398,9 @@ def test_fetch_rejects_bad_urls(monkeypatch, bad_url):
 
 def test_fetch_keyed_path(monkeypatch):
     monkeypatch.setenv("KEENABLE_API_KEY", "secret")
-    _patch_client(monkeypatch, _FakeResponse(json_body={"content": "x"}))
+    _patch_client(monkeypatch, _FakeResponse(json_body=_page_body(content="x")))
     component = KeenableFetchComponent(url="https://e.com", _session_id="t")
     component.fetch()
+    assert _FakeClient.last["method"] == "POST"
     assert _FakeClient.last["url"].endswith("/v1/fetch")
     assert _FakeClient.last["headers"]["X-API-Key"] == "secret"

@@ -8,7 +8,7 @@ from lfx.schema.dataframe import DataFrame
 
 from lfx_keenable.components.keenable._client import (
     KeenableError,
-    keenable_get,
+    keenable_fetch,
     reject_private_fetch_target,
     resolve_api_key,
 )
@@ -67,13 +67,7 @@ class KeenableFetchComponent(Component):
             reject_private_fetch_target(url)
 
             api_key = resolve_api_key(self.api_key)
-            data = keenable_get(
-                "/v1/fetch/public",
-                "/v1/fetch",
-                {"url": url},
-                api_key,
-                float(self.timeout or 30.0),
-            )
+            data = keenable_fetch(url, api_key, float(self.timeout or 30.0))
             result = Data(text=data.get("content") or "", data=data)
             self.status = result
         except KeenableError as e:
