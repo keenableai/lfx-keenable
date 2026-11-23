@@ -35,6 +35,15 @@ test = [
     "pytest>=8.0",
 ]
 
+# The lock file (development and tests only; it is not part of the published
+# package) is resolved for Python 3.11.5 and newer. Python 3.10 reached end of
+# life in October 2026, and the fixed releases of pillow (13.0.0), filelock
+# (4.2.1) and soupsieve (3.0.2 / 4.0.0) no longer support it, so a lock that
+# also covers 3.10 has to pin their vulnerable releases. `requires-python`
+# above is unchanged: the package still installs on 3.10.
+[tool.uv]
+environments = ["python_full_version >= '3.11.5'"]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
