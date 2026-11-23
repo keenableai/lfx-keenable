@@ -223,26 +223,35 @@ def _page_body(**page):
     return {"request_id": "r", "results": [{"url": "https://e.com", **page}]}
 
 
-def test_fetch_keyless_posts_to_public_path(monkeypatch):
+def test_fetch_keyed_posts_urls(monkeypatch):
     _patch_client(monkeypatch, _FakeResponse(json_body=_page_body(content="hi")))
-    page = keenable_fetch("https://e.com", None, 30.0)
+    page = keenable_fetch("https://e.com", "secret", 30.0)
     assert page["content"] == "hi"
     assert _FakeClient.last["method"] == "POST"
-    assert _FakeClient.last["url"].endswith("/v1/fetch/public")
+    assert _FakeClient.last["url"].endswith("/v1/fetch")
     assert _FakeClient.last["json"] == {"urls": ["https://e.com"]}
+
+
+def test_fetch_keyless_uses_public_get(monkeypatch):
+    _patch_client(monkeypatch, _FakeResponse(json_body={"url": "https://e.com", "content": "hi"}))
+    page = keenable_fetch("https://e.com", None, 30.0)
+    assert page["content"] == "hi"
+    assert _FakeClient.last["method"] == "GET"
+    assert _FakeClient.last["url"].endswith("/v1/fetch/public")
+    assert _FakeClient.last["params"] == {"url": "https://e.com"}
 
 
 def test_fetch_page_error_raises(monkeypatch):
     body = {"results": [{"url": "https://e.com", "error": {"status": 404, "message": "page not found"}}]}
     _patch_client(monkeypatch, _FakeResponse(json_body=body))
     with pytest.raises(KeenableError, match="404.*page not found"):
-        keenable_fetch("https://e.com", None, 30.0)
+        keenable_fetch("https://e.com", "secret", 30.0)
 
 
 def test_fetch_without_results_raises(monkeypatch):
     _patch_client(monkeypatch, _FakeResponse(json_body={"results": []}))
     with pytest.raises(KeenableError):
-        keenable_fetch("https://e.com", None, 30.0)
+        keenable_fetch("https://e.com", "secret", 30.0)
 
 
 @pytest.mark.parametrize(
@@ -371,11 +380,11 @@ def test_fetch_component_initialization():
 
 
 def test_fetch_returns_content(monkeypatch):
-    _patch_client(monkeypatch, _FakeResponse(json_body=_page_body(title="T", content="body")))
+    _patch_client(monkeypatch, _FakeResponse(json_body={"url": "https://e.com", "title": "T", "content": "body"}))
     component = KeenableFetchComponent(url="https://e.com", _session_id="t")
     df = component.fetch()
     assert len(df) == 1
-    assert _FakeClient.last["method"] == "POST"
+    assert _FakeClient.last["method"] == "GET"
     assert _FakeClient.last["url"].endswith("/v1/fetch/public")
 
 

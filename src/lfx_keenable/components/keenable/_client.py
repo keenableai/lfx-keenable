@@ -210,8 +210,30 @@ def keenable_post(
     return _decode(response, api_key)
 
 
+def keenable_get(
+    public_path: str,
+    keyed_path: str,
+    params: dict[str, Any],
+    api_key: str | None,
+    timeout: float,
+) -> dict[str, Any]:
+    """GET the keyed or keyless endpoint with query ``params``; return the body."""
+    path = _select_path(api_key, public_path, keyed_path)
+    url = f"{resolve_base_url()}{path}"
+    try:
+        with httpx.Client(timeout=timeout) as client:
+            response = client.get(url, params=params, headers=_headers(api_key))
+    except httpx.RequestError as e:
+        msg = f"Could not reach the Keenable API: {type(e).__name__}: {_redact(str(e), api_key)}"
+        raise KeenableError(msg) from e
+    return _decode(response, api_key)
+
+
 def keenable_fetch(url: str, api_key: str | None, timeout: float) -> dict[str, Any]:
-    """Read one page with ``POST /v1/fetch``; return its result or raise its error."""
+    """Read one page: ``POST /v1/fetch`` with a key, keyless GET public otherwise."""
+    if not api_key:
+        # No keyless POST fetch exists; the public GET is the only keyless path.
+        return keenable_get("/v1/fetch/public", "/v1/fetch", {"url": url}, None, timeout)
     data = keenable_post("/v1/fetch/public", "/v1/fetch", {"urls": [url]}, api_key, timeout)
     results = data.get("results")
     page = results[0] if isinstance(results, list) and results else None
