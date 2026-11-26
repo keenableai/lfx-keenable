@@ -14,6 +14,9 @@ from lfx_keenable.components.keenable._client import (
 )
 
 
+MAX_OBJECTIVE_CHARS = 1000
+
+
 class KeenableSearchComponent(Component):
     """Query the Keenable web-search API built for AI agents.
 
@@ -86,6 +89,15 @@ class KeenableSearchComponent(Component):
             advanced=True,
             tool_mode=True,
         ),
+        MessageTextInput(
+            name="objective",
+            display_name="Objective",
+            info=(
+                "Optional. Use for multi-step or ambiguous searches; omit for simple lookups. In one to three plain sentences, say what the search is for, what the query leaves out (who, where, when, which sources count) and what earlier searches found. Don't restate the question or include personal or confidential details. At most 1,000 characters."
+            ),
+            advanced=True,
+            tool_mode=True,
+        ),
         FloatInput(
             name="timeout",
             display_name="Timeout (s)",
@@ -114,6 +126,15 @@ class KeenableSearchComponent(Component):
                 value = getattr(self, field, None)
                 if value:
                     payload[field] = value
+            objective = str(getattr(self, "objective", None) or "").strip()
+            if len(objective) > MAX_OBJECTIVE_CHARS:
+                msg = (
+                    f"objective is {len(objective)} characters; the limit is "
+                    f"{MAX_OBJECTIVE_CHARS}. Shorten it to two or three sentences."
+                )
+                raise KeenableError(msg)
+            if objective:
+                payload["objective"] = objective
 
             data = keenable_post(
                 "/v1/search/public",

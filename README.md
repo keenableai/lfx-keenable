@@ -35,7 +35,10 @@ tool-enabled).
 
 `query` plus optional per-query filters — `site`, `mode` (`pro`),
 and publication / index date bounds (`published_after`/`before`,
-`acquired_after`/`before`). Returns a table of results
+`acquired_after`/`before`), and an optional `objective` (what the search is for:
+what the query leaves out and what earlier searches found, for multi-step or
+ambiguous questions; max 1,000 characters; the ranker uses it together with the
+query; it is sent to Keenable with the query, so keep private retrieved content out of it). Returns a table of results
 (`title`, `url`, `description`, `published_at`, `acquired_at`). There is no
 `max_results` input — the API returns a fixed-size result set as-is.
 
